@@ -5,24 +5,18 @@ use bevy::{
     render::{
         render_resource::WgpuFeatures,
         settings::{RenderCreation, WgpuSettings},
-        view::NoFrustumCulling,
         RenderPlugin,
     },
 };
 use camera::RotatingCamera;
-use custom_mesh::create_cube_mesh;
+use custom_mesh::gen_visible_faces;
 use input::input_handler;
 use iyes_perf_ui::{entries::PerfUiBundle, PerfUiPlugin};
-use render::{CustomMaterialPlugin, InstanceData, InstanceMaterialData};
 
 mod camera;
 mod custom_mesh;
 mod gui;
 mod input;
-mod render;
-
-#[derive(Component)]
-pub struct CustomUV;
 
 fn main() {
     let mut wgpu_settings = WgpuSettings::default();
@@ -35,7 +29,6 @@ fn main() {
             }),
             ..default()
         }),))
-        // .add_plugins(CustomMaterialPlugin)
         .add_plugins(bevy::pbr::wireframe::WireframePlugin)
         .add_plugins(camera::RotatingCameraPlugin)
         // GUI
@@ -62,62 +55,37 @@ fn setup(
 ) {
     // Import the custom texture.
     let custom_texture_handle: Handle<Image> = asset_server.load("array_texture.png");
-    // Create and save a handle to the mesh.
-    let cube_mesh_handle: Handle<Mesh> = meshes.add(create_cube_mesh());
 
-    // Render the mesh with the custom texture using a PbrBundle, add the marker.
-    let scale = 1.0;
-    let grid_size = 20;
-    let gap = 1.0;
+    // let scale = 1.0;
+    // let gap = 1.0;
     // let cube_size = scale + gap;
-    let cube_size = scale;
-    for x in 0..grid_size {
-        for y in 0..grid_size {
-            for z in 0..grid_size {
-                commands.spawn(PbrBundle {
-                    mesh: cube_mesh_handle.clone(),
-                    material: materials.add(StandardMaterial {
-                        base_color_texture: Some(custom_texture_handle.clone()),
-                        // base_color: Color::WHITE,
-                        base_color: Color::srgba(1.0, 1.0, 1.0, 1.0),
-                        // alpha_mode: AlphaMode::Mask(0.5),
-                        ..default()
-                    }),
-                    transform: Transform::from_xyz(
-                        (x as f32 * cube_size) - (grid_size as f32 * cube_size / 2.0),
-                        (y as f32 * cube_size) - (grid_size as f32 * cube_size / 2.0),
-                        (z as f32 * cube_size) - (grid_size as f32 * cube_size / 2.0),
-                    ),
-                    ..default()
-                });
+    // let cube_size = scale;
+    let grid_size = 100;
+    let mut cubes: Vec<Vec<Vec<(i32, i32, i32)>>> = vec![];
+    for y in 0..grid_size {
+        let mut t = vec![];
+        for z in 0..grid_size {
+            let mut m = vec![];
+            for x in 0..grid_size {
+                m.push((x, y, z));
             }
+            t.push(m);
         }
+        cubes.push(t);
     }
-    // commands.spawn(PbrBundle {
-    //     mesh: cube_mesh_handle,
-    //     material: materials.add(StandardMaterial {
-    //         base_color_texture: Some(custom_texture_handle),
-    //         base_color: Color::srgba(1.0, 1.0, 1.0, 0.0),
-    //         ..default()
-    //     }),
-    //     ..default()
-    // });
-    // .insert(InstanceMaterialData(
-    //     (1..=grid_size)
-    //         .flat_map(|x| (1..=grid_size).map(move |y| (x as f32, y as f32)))
-    //         .map(|(x, y)| InstanceData {
-    //             position: Vec3::new(
-    //                 (x * cube_size) - (grid_size as f32 * cube_size / 2.0),
-    //                 (y * cube_size) - (grid_size as f32 * cube_size / 2.0),
-    //                 0.0,
-    //             ),
-    //             scale: scale,
-    //             // color: Color::WHITE.with_alpha(0.0).to_linear().to_f32_array(),
-    //             color: LinearRgba::new(1.0, 1.0, 1.0, 0.0).to_f32_array(),
-    //         })
-    //         .collect::<Vec<_>>(),
-    // ))
-    // .insert(NoFrustumCulling);
+    let chunk_mesh = gen_visible_faces(&cubes);
+
+    commands.spawn(PbrBundle {
+        mesh: meshes.add(chunk_mesh),
+        material: materials.add(StandardMaterial {
+            base_color_texture: Some(custom_texture_handle.clone()),
+            // base_color: Color::WHITE,
+            base_color: Color::srgba(1.0, 1.0, 1.0, 1.0),
+            // alpha_mode: AlphaMode::Mask(0.5),
+            ..default()
+        }),
+        ..default()
+    });
 
     // Transform for the camera and lighting, looking at (0,0,0) (the position of the mesh).
     let camera_and_light_transform =

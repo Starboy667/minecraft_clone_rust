@@ -1,124 +1,407 @@
 use bevy::{
+    math::{Vec2, Vec3},
     prelude::Mesh,
     render::{mesh::Indices, render_asset::RenderAssetUsages, render_resource::PrimitiveTopology},
 };
 
-#[rustfmt::skip]
-pub fn create_cube_mesh() -> Mesh {
-    // Keep the mesh data accessible in future frames to be able to mutate it in toggle_texture.
-    Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::MAIN_WORLD | RenderAssetUsages::RENDER_WORLD)
-    .with_inserted_attribute(
-        Mesh::ATTRIBUTE_POSITION,
-        // Each array is an [x, y, z] coordinate in local space.
-        // The camera coordinate space is right-handed x-right, y-up, z-back. This means "forward" is -Z.
-        // Meshes always rotate around their local [0, 0, 0] when a rotation is applied to their Transform.
-        // By centering our mesh around the origin, rotating the mesh preserves its center of mass.
-        vec![
+#[derive(Debug)]
+pub enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
+    Forward,
+    Backward,
+}
+
+#[derive(Debug)]
+pub struct MeshData {
+    pos: Vec<[f64; 3]>,
+    uv: Vec<[f64; 2]>,
+    normal: Vec<[f64; 3]>,
+    indices: Vec<u32>,
+}
+
+pub fn gen_visible_faces(cubes: &Vec<Vec<Vec<(i32, i32, i32)>>>) -> Mesh {
+    let mut visible_cubes: Vec<MeshData> = Vec::new();
+    let mut cube_count = 0;
+
+    for y in 0..cubes.len() {
+        for z in 0..cubes[y].len() {
+            for x in 0..cubes[y][z].len() {
+                // for direction in [
+                //     DirectionB::Y,
+                //     DirectionB::NegY,
+                //     DirectionB::X,
+                //     DirectionB::NegX,
+                //     DirectionB::Z,
+                //     DirectionB::NegZ,
+                // ]
+                // .iter()
+                // {
+                for direction in check_visibility(x, y, z, cubes) {
+                    match direction {
+                        DirectionB::Y => {
+                            visible_cubes.push(create_cube_faces_mesh(
+                                Direction::Up,
+                                x,
+                                y,
+                                z,
+                                cube_count,
+                            ));
+                        }
+                        DirectionB::NegY => {
+                            visible_cubes.push(create_cube_faces_mesh(
+                                Direction::Down,
+                                x,
+                                y,
+                                z,
+                                cube_count,
+                            ));
+                        }
+                        DirectionB::X => {
+                            visible_cubes.push(create_cube_faces_mesh(
+                                Direction::Right,
+                                x,
+                                y,
+                                z,
+                                cube_count,
+                            ));
+                        }
+                        DirectionB::NegX => {
+                            visible_cubes.push(create_cube_faces_mesh(
+                                Direction::Left,
+                                x,
+                                y,
+                                z,
+                                cube_count,
+                            ));
+                        }
+                        DirectionB::Z => {
+                            visible_cubes.push(create_cube_faces_mesh(
+                                Direction::Backward,
+                                x,
+                                y,
+                                z,
+                                cube_count,
+                            ));
+                        }
+                        DirectionB::NegZ => {
+                            visible_cubes.push(create_cube_faces_mesh(
+                                Direction::Forward,
+                                x,
+                                y,
+                                z,
+                                cube_count,
+                            ));
+                        }
+                        _ => continue,
+                    }
+                    cube_count += 4;
+                }
+            }
+        }
+    }
+    add_meshes(visible_cubes)
+}
+
+#[derive(Debug)]
+enum DirectionB {
+    X,
+    Y,
+    Z,
+    NegX,
+    NegY,
+    NegZ,
+}
+fn check_visibility(
+    x: usize,
+    y: usize,
+    z: usize,
+    cubes: &Vec<Vec<Vec<(i32, i32, i32)>>>,
+) -> Vec<DirectionB> {
+    let mut directions: Vec<DirectionB> = Vec::new();
+
+    // Y
+    match cubes.get(x) {
+        Some(inner_vec) => match inner_vec.get(y + 1) {
+            Some(inner_inner_vec) => match inner_inner_vec.get(z) {
+                Some(_) => {}
+                None => directions.push(DirectionB::Y),
+            },
+            None => directions.push(DirectionB::Y),
+        },
+        None => directions.push(DirectionB::Y),
+    };
+    if y == 0 {
+        directions.push(DirectionB::NegY);
+    } else {
+        match cubes.get(x) {
+            Some(inner_vec) => match inner_vec.get(y - 1) {
+                Some(inner_inner_vec) => match inner_inner_vec.get(z) {
+                    Some(_) => {}
+                    None => directions.push(DirectionB::NegY),
+                },
+                None => {}
+            },
+            None => {}
+        };
+    }
+
+    // X
+    match cubes.get(x + 1) {
+        Some(inner_vec) => match inner_vec.get(y) {
+            Some(inner_inner_vec) => match inner_inner_vec.get(z) {
+                Some(_) => {}
+                None => directions.push(DirectionB::X),
+            },
+            None => directions.push(DirectionB::X),
+        },
+        None => directions.push(DirectionB::X),
+    };
+    if x == 0 {
+        directions.push(DirectionB::NegX);
+    } else {
+        match cubes.get(x - 1) {
+            Some(inner_vec) => match inner_vec.get(y) {
+                Some(inner_inner_vec) => match inner_inner_vec.get(z) {
+                    Some(_) => {}
+                    None => directions.push(DirectionB::NegX),
+                },
+                None => {}
+            },
+            None => {}
+        };
+    }
+
+    // Z
+    match cubes.get(x) {
+        Some(inner_vec) => match inner_vec.get(y) {
+            Some(inner_inner_vec) => match inner_inner_vec.get(z + 1) {
+                Some(_) => {}
+                None => directions.push(DirectionB::Z),
+            },
+            None => {}
+        },
+        None => {}
+    };
+    if z == 0 {
+        directions.push(DirectionB::NegZ);
+    } else {
+        match cubes.get(x) {
+            Some(inner_vec) => match inner_vec.get(y) {
+                Some(inner_inner_vec) => match inner_inner_vec.get(z - 1) {
+                    Some(_) => {}
+                    None => directions.push(DirectionB::NegZ),
+                },
+                None => {}
+            },
+            None => {}
+        };
+    }
+    directions
+}
+
+pub fn add_meshes(data: Vec<MeshData>) -> Mesh {
+    let mut pos = Vec::new();
+    let mut uv = Vec::new();
+    let mut normal = Vec::new();
+    let mut indices = Vec::new();
+    for face in data.iter() {
+        pos.extend(
+            face.pos
+                .iter()
+                .map(|&p| Vec3::new(p[0] as f32, p[1] as f32, p[2] as f32)),
+        );
+        uv.extend(face.uv.iter().map(|&u| Vec2::new(u[0] as f32, u[1] as f32)));
+        normal.extend(
+            face.normal
+                .iter()
+                .map(|&n| Vec3::new(n[0] as f32, n[1] as f32, n[2] as f32)),
+        );
+
+        indices.extend(face.indices.iter().map(|&i| i));
+    }
+
+    Mesh::new(
+        PrimitiveTopology::TriangleList,
+        RenderAssetUsages::MAIN_WORLD | RenderAssetUsages::RENDER_WORLD,
+    )
+    .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, pos)
+    .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, uv)
+    .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, normal)
+    .with_inserted_indices(Indices::U32(indices))
+}
+
+pub fn create_cube_faces_mesh(
+    direction: Direction,
+    x: usize,
+    y: usize,
+    z: usize,
+    offset: u32,
+) -> MeshData {
+    let mut pos = match direction {
+        Direction::Up => vec![
             // top (facing towards +y)
             [-0.5, 0.5, -0.5], // vertex with index 0
-            [0.5, 0.5, -0.5], // vertex with index 1
-            [0.5, 0.5, 0.5], // etc. until 23
+            [0.5, 0.5, -0.5],  // vertex with index 1
+            [0.5, 0.5, 0.5],   // etc. until 23
             [-0.5, 0.5, 0.5],
+        ],
+        Direction::Down => vec![
             // bottom   (-y)
             [-0.5, -0.5, -0.5],
             [0.5, -0.5, -0.5],
             [0.5, -0.5, 0.5],
             [-0.5, -0.5, 0.5],
+        ],
+        Direction::Right => vec![
             // right    (+x)
             [0.5, -0.5, -0.5],
             [0.5, -0.5, 0.5],
-            [0.5, 0.5, 0.5], // This vertex is at the same position as vertex with index 2, but they'll have different UV and normal
+            [0.5, 0.5, 0.5],
             [0.5, 0.5, -0.5],
+        ],
+        Direction::Left => vec![
             // left     (-x)
             [-0.5, -0.5, -0.5],
             [-0.5, -0.5, 0.5],
             [-0.5, 0.5, 0.5],
             [-0.5, 0.5, -0.5],
+        ],
+        Direction::Backward => vec![
             // back     (+z)
             [-0.5, -0.5, 0.5],
             [-0.5, 0.5, 0.5],
             [0.5, 0.5, 0.5],
             [0.5, -0.5, 0.5],
+        ],
+        Direction::Forward => vec![
             // forward  (-z)
             [-0.5, -0.5, -0.5],
             [-0.5, 0.5, -0.5],
             [0.5, 0.5, -0.5],
             [0.5, -0.5, -0.5],
         ],
-    )
-    // Set-up UV coordinates to point to the upper (V < 0.5), "dirt+grass" part of the texture.
-    // Take a look at the custom image (assets/textures/array_texture.png)
-    // so the UV coords will make more sense
-    // Note: (0.0, 0.0) = Top-Left in UV mapping, (1.0, 1.0) = Bottom-Right in UV mapping
-    .with_inserted_attribute(
-        Mesh::ATTRIBUTE_UV_0,
-        vec![
+    };
+
+    let uv = match direction {
+        Direction::Up => vec![
             // Assigning the UV coords for the top side.
-            [0.0, 0.2], [0.0, 0.0], [1.0, 0.0], [1.0, 0.2],
-            // Assigning the UV coords for the bottom side.
-            [0.0, 0.45], [0.0, 0.25], [1.0, 0.25], [1.0, 0.45],
-            // Assigning the UV coords for the right side.
-            [1.0, 0.45], [0.0, 0.45], [0.0, 0.2], [1.0, 0.2],
-            // Assigning the UV coords for the left side.
-            [1.0, 0.45], [0.0, 0.45], [0.0, 0.2], [1.0, 0.2],
-            // Assigning the UV coords for the back side.
-            [0.0, 0.45], [0.0, 0.2], [1.0, 0.2], [1.0, 0.45],
-            // Assigning the UV coords for the forward side.
-            [0.0, 0.45], [0.0, 0.2], [1.0, 0.2], [1.0, 0.45],
+            [0.0, 0.2],
+            [0.0, 0.0],
+            [1.0, 0.0],
+            [1.0, 0.2],
         ],
-    )
-    // For meshes with flat shading, normals are orthogonal (pointing out) from the direction of
-    // the surface.
-    // Normals are required for correct lighting calculations.
-    // Each array represents a normalized vector, which length should be equal to 1.0.
-    .with_inserted_attribute(
-        Mesh::ATTRIBUTE_NORMAL,
-        vec![
+        Direction::Down => vec![
+            // Assigning the UV coords for the bottom side.
+            [0.0, 0.45],
+            [0.0, 0.25],
+            [1.0, 0.25],
+            [1.0, 0.45],
+        ],
+        Direction::Right => vec![
+            // Assigning the UV coords for the right side.
+            [1.0, 0.45],
+            [0.0, 0.45],
+            [0.0, 0.2],
+            [1.0, 0.2],
+        ],
+        Direction::Left => vec![
+            // Assigning the UV coords for the left side.
+            [1.0, 0.45],
+            [0.0, 0.45],
+            [0.0, 0.2],
+            [1.0, 0.2],
+        ],
+        Direction::Backward => vec![
+            // Assigning the UV coords for the back side.
+            [0.0, 0.45],
+            [0.0, 0.2],
+            [1.0, 0.2],
+            [1.0, 0.45],
+        ],
+        Direction::Forward => vec![
+            // Assigning the UV coords for the forward side.
+            [0.0, 0.45],
+            [0.0, 0.2],
+            [1.0, 0.2],
+            [1.0, 0.45],
+        ],
+    };
+
+    let normal = match direction {
+        Direction::Up => vec![
             // Normals for the top side (towards +y)
             [0.0, 1.0, 0.0],
             [0.0, 1.0, 0.0],
             [0.0, 1.0, 0.0],
             [0.0, 1.0, 0.0],
+        ],
+        Direction::Down => vec![
             // Normals for the bottom side (towards -y)
             [0.0, -1.0, 0.0],
             [0.0, -1.0, 0.0],
             [0.0, -1.0, 0.0],
             [0.0, -1.0, 0.0],
+        ],
+        Direction::Right => vec![
             // Normals for the right side (towards +x)
             [1.0, 0.0, 0.0],
             [1.0, 0.0, 0.0],
             [1.0, 0.0, 0.0],
             [1.0, 0.0, 0.0],
+        ],
+        Direction::Left => vec![
             // Normals for the left side (towards -x)
             [-1.0, 0.0, 0.0],
             [-1.0, 0.0, 0.0],
             [-1.0, 0.0, 0.0],
             [-1.0, 0.0, 0.0],
+        ],
+        Direction::Backward => vec![
             // Normals for the back side (towards +z)
             [0.0, 0.0, 1.0],
             [0.0, 0.0, 1.0],
             [0.0, 0.0, 1.0],
             [0.0, 0.0, 1.0],
+        ],
+        Direction::Forward => vec![
             // Normals for the forward side (towards -z)
             [0.0, 0.0, -1.0],
             [0.0, 0.0, -1.0],
             [0.0, 0.0, -1.0],
             [0.0, 0.0, -1.0],
         ],
-    )
-    // Create the triangles out of the 24 vertices we created.
-    // To construct a square, we need 2 triangles, therefore 12 triangles in total.
-    // To construct a triangle, we need the indices of its 3 defined vertices, adding them one
-    // by one, in a counter-clockwise order (relative to the position of the viewer, the order
-    // should appear counter-clockwise from the front of the triangle, in this case from outside the cube).
-    // Read more about how to correctly build a mesh manually in the Bevy documentation of a Mesh,
-    // further examples and the implementation of the built-in shapes.
-    .with_inserted_indices(Indices::U32(vec![
-        0,3,1 , 1,3,2, // triangles making up the top (+y) facing side.
-        4,5,7 , 5,6,7, // bottom (-y)
-        8,11,9 , 9,11,10, // right (+x)
-        12,13,15 , 13,14,15, // left (-x)
-        16,19,17 , 17,19,18, // back (+z)
-        20,21,23 , 21,22,23, // forward (-z)
-    ]))
+    };
+
+    let indices = match direction {
+        Direction::Up | Direction::Right | Direction::Backward => vec![
+            offset,
+            offset + 3,
+            offset + 1,
+            offset + 1,
+            offset + 3,
+            offset + 2,
+        ],
+        Direction::Down | Direction::Left | Direction::Forward => vec![
+            offset,
+            offset + 1,
+            offset + 3,
+            offset + 1,
+            offset + 2,
+            offset + 3,
+        ],
+    };
+    for p in pos.iter_mut() {
+        p[0] += x as f64;
+        p[1] += y as f64;
+        p[2] += z as f64;
+    }
+    MeshData {
+        pos,
+        uv,
+        normal,
+        indices,
+    }
 }
