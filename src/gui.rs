@@ -18,19 +18,19 @@ pub fn update_ui(mut this: ResMut<World>, mut contexts: EguiContexts) {
         ui.label("Settings");
         // WIDTH
         let old_width = width;
-        ui.add(egui::Slider::new(&mut width, 30..=300).text("bounds"));
+        ui.add(egui::Slider::new(&mut width, 1..=300).text("bounds"));
         if width != old_width {
             this.set_size(height, width, depth);
         }
         // HEIGHT
         let old_height = height;
-        ui.add(egui::Slider::new(&mut height, 30..=300).text("height"));
+        ui.add(egui::Slider::new(&mut height, 1..=300).text("height"));
         if height != old_height {
             this.set_size(height, width, depth);
         }
         // DEPTH
         let old_depth = depth;
-        ui.add(egui::Slider::new(&mut depth, 30..=300).text("depth"));
+        ui.add(egui::Slider::new(&mut depth, 1..=300).text("depth"));
         if depth != old_depth {
             this.set_size(height, width, depth);
         }
