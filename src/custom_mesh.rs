@@ -39,7 +39,7 @@ pub fn gen_visible_faces(cubes: &Vec<Vec<Vec<(i32, i32, i32)>>>) -> Mesh {
                 // ]
                 // .iter()
                 // {
-                for direction in check_visibility(x, y, z, cubes) {
+                for direction in check_visibility(y, z, x, cubes) {
                     match direction {
                         DirectionB::Y => {
                             visible_cubes.push(create_cube_faces_mesh(
@@ -95,7 +95,6 @@ pub fn gen_visible_faces(cubes: &Vec<Vec<Vec<(i32, i32, i32)>>>) -> Mesh {
                                 cube_count,
                             ));
                         }
-                        _ => continue,
                     }
                     cube_count += 4;
                 }
@@ -114,6 +113,8 @@ enum DirectionB {
     NegY,
     NegZ,
 }
+
+// FIX CORRESPONDACE X Y Z
 fn check_visibility(
     x: usize,
     y: usize,
@@ -127,20 +128,20 @@ fn check_visibility(
         Some(inner_vec) => match inner_vec.get(y + 1) {
             Some(inner_inner_vec) => match inner_inner_vec.get(z) {
                 Some(_) => {}
-                None => directions.push(DirectionB::Y),
+                None => directions.push(DirectionB::Z),
             },
-            None => directions.push(DirectionB::Y),
+            None => directions.push(DirectionB::Z),
         },
-        None => directions.push(DirectionB::Y),
+        None => directions.push(DirectionB::Z),
     };
     if y == 0 {
-        directions.push(DirectionB::NegY);
+        directions.push(DirectionB::NegZ);
     } else {
         match cubes.get(x) {
             Some(inner_vec) => match inner_vec.get(y - 1) {
                 Some(inner_inner_vec) => match inner_inner_vec.get(z) {
                     Some(_) => {}
-                    None => directions.push(DirectionB::NegY),
+                    None => directions.push(DirectionB::NegZ),
                 },
                 None => {}
             },
@@ -153,20 +154,20 @@ fn check_visibility(
         Some(inner_vec) => match inner_vec.get(y) {
             Some(inner_inner_vec) => match inner_inner_vec.get(z) {
                 Some(_) => {}
-                None => directions.push(DirectionB::X),
+                None => directions.push(DirectionB::Y),
             },
-            None => directions.push(DirectionB::X),
+            None => directions.push(DirectionB::Y),
         },
-        None => directions.push(DirectionB::X),
+        None => directions.push(DirectionB::Y),
     };
     if x == 0 {
-        directions.push(DirectionB::NegX);
+        directions.push(DirectionB::NegY);
     } else {
         match cubes.get(x - 1) {
             Some(inner_vec) => match inner_vec.get(y) {
                 Some(inner_inner_vec) => match inner_inner_vec.get(z) {
                     Some(_) => {}
-                    None => directions.push(DirectionB::NegX),
+                    None => directions.push(DirectionB::Y),
                 },
                 None => {}
             },
@@ -179,20 +180,20 @@ fn check_visibility(
         Some(inner_vec) => match inner_vec.get(y) {
             Some(inner_inner_vec) => match inner_inner_vec.get(z + 1) {
                 Some(_) => {}
-                None => directions.push(DirectionB::Z),
+                None => directions.push(DirectionB::X),
             },
             None => {}
         },
         None => {}
     };
     if z == 0 {
-        directions.push(DirectionB::NegZ);
+        directions.push(DirectionB::NegX);
     } else {
         match cubes.get(x) {
             Some(inner_vec) => match inner_vec.get(y) {
                 Some(inner_inner_vec) => match inner_inner_vec.get(z - 1) {
                     Some(_) => {}
-                    None => directions.push(DirectionB::NegZ),
+                    None => directions.push(DirectionB::NegX),
                 },
                 None => {}
             },

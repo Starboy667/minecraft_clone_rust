@@ -1,26 +1,39 @@
 use bevy::{
     app::{Plugin, Update},
-    color::Color,
+    // color::Color,
     prelude::ResMut,
 };
 use bevy_egui::{
-    egui::{self, Color32},
+    egui::{self},
     EguiContexts, EguiPlugin,
 };
 
-pub fn update_ui(
-    // mut this: ResMut<Sims>,
-    mut contexts: EguiContexts,
-) {
-    // let mut bounds = this.bounds;
-    egui::Window::new("Simulation").show(contexts.ctx_mut(), |ui| {
+use crate::world::World;
+
+pub fn update_ui(mut this: ResMut<World>, mut contexts: EguiContexts) {
+    let mut width = this.width;
+    let mut height = this.height;
+    let mut depth = this.depth;
+    egui::Window::new("World").show(contexts.ctx_mut(), |ui| {
         ui.label("Settings");
-        // // BOUNDS
-        // let old_bounds = bounds;
-        // ui.add(egui::Slider::new(&mut bounds, 30..=300).text("bounds"));
-        // if bounds != old_bounds {
-        //     this.set_size(bounds);
-        // }
+        // WIDTH
+        let old_width = width;
+        ui.add(egui::Slider::new(&mut width, 30..=300).text("bounds"));
+        if width != old_width {
+            this.set_size(height, width, depth);
+        }
+        // HEIGHT
+        let old_height = height;
+        ui.add(egui::Slider::new(&mut height, 30..=300).text("height"));
+        if height != old_height {
+            this.set_size(height, width, depth);
+        }
+        // DEPTH
+        let old_depth = depth;
+        ui.add(egui::Slider::new(&mut depth, 30..=300).text("depth"));
+        if depth != old_depth {
+            this.set_size(height, width, depth);
+        }
         // // SPEED
         // let mut speed = this.update_timer.duration().as_secs_f32();
         // ui.add(egui::Slider::new(&mut speed, 0.0..=0.5).text("speed"));
