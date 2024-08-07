@@ -16,16 +16,16 @@ pub fn update_ui(mut this: ResMut<World>, mut contexts: EguiContexts) {
     let mut depth = this.depth;
     egui::Window::new("World").show(contexts.ctx_mut(), |ui| {
         ui.label("Settings");
-        // WIDTH
-        let old_width = width;
-        ui.add(egui::Slider::new(&mut width, 1..=300).text("bounds"));
-        if width != old_width {
-            this.set_size(height, width, depth);
-        }
         // HEIGHT
         let old_height = height;
         ui.add(egui::Slider::new(&mut height, 1..=300).text("height"));
         if height != old_height {
+            this.set_size(height, width, depth);
+        }
+        // WIDTH
+        let old_width = width;
+        ui.add(egui::Slider::new(&mut width, 1..=300).text("width"));
+        if width != old_width {
             this.set_size(height, width, depth);
         }
         // DEPTH

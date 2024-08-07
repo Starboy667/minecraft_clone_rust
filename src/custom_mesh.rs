@@ -22,7 +22,7 @@ pub struct MeshData {
     indices: Vec<u32>,
 }
 
-pub fn gen_visible_faces(cubes: &Vec<Vec<Vec<(i32, i32, i32)>>>) -> Mesh {
+pub fn gen_visible_faces(cubes: &Vec<Vec<Vec<usize>>>) -> Mesh {
     let mut visible_cubes: Vec<MeshData> = Vec::new();
     let mut cube_count = 0;
 
@@ -39,6 +39,9 @@ pub fn gen_visible_faces(cubes: &Vec<Vec<Vec<(i32, i32, i32)>>>) -> Mesh {
                 // ]
                 // .iter()
                 // {
+                if cubes[y][z][x] == 0 {
+                    continue;
+                }
                 for direction in check_visibility(y, z, x, cubes) {
                     match direction {
                         DirectionB::Y => {
@@ -115,19 +118,18 @@ enum DirectionB {
 }
 
 // FIX CORRESPONDACE X Y Z
-fn check_visibility(
-    x: usize,
-    y: usize,
-    z: usize,
-    cubes: &Vec<Vec<Vec<(i32, i32, i32)>>>,
-) -> Vec<DirectionB> {
+fn check_visibility(x: usize, y: usize, z: usize, cubes: &Vec<Vec<Vec<usize>>>) -> Vec<DirectionB> {
     let mut directions: Vec<DirectionB> = Vec::new();
 
     // Y
     match cubes.get(x) {
         Some(inner_vec) => match inner_vec.get(y + 1) {
             Some(inner_inner_vec) => match inner_inner_vec.get(z) {
-                Some(_) => {}
+                Some(val) => {
+                    if *val == 0 {
+                        directions.push(DirectionB::Z);
+                    }
+                }
                 None => directions.push(DirectionB::Z),
             },
             None => directions.push(DirectionB::Z),
@@ -140,7 +142,11 @@ fn check_visibility(
         match cubes.get(x) {
             Some(inner_vec) => match inner_vec.get(y - 1) {
                 Some(inner_inner_vec) => match inner_inner_vec.get(z) {
-                    Some(_) => {}
+                    Some(val) => {
+                        if *val == 0 {
+                            directions.push(DirectionB::NegZ);
+                        }
+                    }
                     None => directions.push(DirectionB::NegZ),
                 },
                 None => {}
@@ -153,7 +159,11 @@ fn check_visibility(
     match cubes.get(x + 1) {
         Some(inner_vec) => match inner_vec.get(y) {
             Some(inner_inner_vec) => match inner_inner_vec.get(z) {
-                Some(_) => {}
+                Some(val) => {
+                    if *val == 0 {
+                        directions.push(DirectionB::Y);
+                    }
+                }
                 None => directions.push(DirectionB::Y),
             },
             None => directions.push(DirectionB::Y),
@@ -166,7 +176,11 @@ fn check_visibility(
         match cubes.get(x - 1) {
             Some(inner_vec) => match inner_vec.get(y) {
                 Some(inner_inner_vec) => match inner_inner_vec.get(z) {
-                    Some(_) => {}
+                    Some(val) => {
+                        if *val == 0 {
+                            directions.push(DirectionB::Y);
+                        }
+                    }
                     None => directions.push(DirectionB::Y),
                 },
                 None => {}
@@ -179,7 +193,11 @@ fn check_visibility(
     match cubes.get(x) {
         Some(inner_vec) => match inner_vec.get(y) {
             Some(inner_inner_vec) => match inner_inner_vec.get(z + 1) {
-                Some(_) => {}
+                Some(val) => {
+                    if *val == 0 {
+                        directions.push(DirectionB::X);
+                    }
+                }
                 None => directions.push(DirectionB::X),
             },
             None => {}
@@ -192,7 +210,11 @@ fn check_visibility(
         match cubes.get(x) {
             Some(inner_vec) => match inner_vec.get(y) {
                 Some(inner_inner_vec) => match inner_inner_vec.get(z - 1) {
-                    Some(_) => {}
+                    Some(val) => {
+                        if *val == 0 {
+                            directions.push(DirectionB::NegX);
+                        }
+                    }
                     None => directions.push(DirectionB::NegX),
                 },
                 None => {}
