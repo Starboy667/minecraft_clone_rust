@@ -15,6 +15,7 @@ use input::input_handler;
 use iyes_perf_ui::{entries::PerfUiBundle, PerfUiPlugin};
 
 mod camera;
+mod chunk;
 mod custom_mesh;
 mod gui;
 mod input;
@@ -32,20 +33,21 @@ fn main() {
             ..default()
         }),))
         .add_plugins(world::WorldPlugin)
-        .add_plugins(bevy::pbr::wireframe::WireframePlugin)
         // .add_plugins(camera::RotatingCameraPlugin)
         .add_plugins(bevy_panorbit_camera::PanOrbitCameraPlugin)
-        // GUI
-        .add_plugins(gui::GuiPlugin)
         // FPS
         .add_plugins(bevy::diagnostic::FrameTimeDiagnosticsPlugin)
         .add_plugins(bevy::diagnostic::EntityCountDiagnosticsPlugin)
         .add_plugins(bevy::diagnostic::SystemInformationDiagnosticsPlugin)
         .add_plugins(PerfUiPlugin)
+        // WIREFRAME
+        .add_plugins(bevy::pbr::wireframe::WireframePlugin)
         .insert_resource(WireframeConfig {
             global: false,
             default_color: WHITE.into(),
         })
+        // GUI
+        .add_plugins(gui::GuiPlugin)
         .add_systems(Startup, setup)
         .add_systems(Update, input_handler)
         .run();
@@ -59,25 +61,6 @@ fn setup(
 ) {
     // Import the custom texture.
     let custom_texture_handle: Handle<Image> = asset_server.load("array_texture.png");
-
-    // let scale = 1.0;
-    // let gap = 1.0;
-    // let cube_size = scale + gap;
-    // let cube_size = scale;
-    // let grid_size = 10;
-    // let mut cubes: Vec<Vec<Vec<(i32, i32, i32)>>> = vec![];
-    // for y in 0..grid_size {
-    //     let mut t = vec![];
-    //     for z in 0..grid_size {
-    //         let mut m = vec![];
-    //         for x in 0..grid_size {
-    //             m.push((x, y, z));
-    //         }
-    //         t.push(m);
-    //     }
-    //     cubes.push(t);
-    // }
-    // let chunk_mesh = gen_visible_faces(&cubes);
 
     commands.spawn(PbrBundle {
         mesh: meshes.add(Cuboid {
