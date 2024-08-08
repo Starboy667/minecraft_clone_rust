@@ -22,7 +22,7 @@ pub struct MeshData {
     indices: Vec<u32>,
 }
 
-pub fn gen_visible_faces(cubes: &Vec<Vec<Vec<usize>>>) -> Mesh {
+pub fn gen_visible_faces(cubes: &Vec<Vec<Vec<usize>>>, offset: Vec2) -> Mesh {
     let mut visible_cubes: Vec<MeshData> = Vec::new();
     let mut cube_count = 0;
 

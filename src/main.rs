@@ -1,7 +1,7 @@
 use bevy::{
     color::palettes::css::WHITE,
     pbr::wireframe::WireframeConfig,
-    prelude::*,
+    prelude::{Sphere, *},
     render::{
         render_resource::WgpuFeatures,
         settings::{RenderCreation, WgpuSettings},
@@ -9,16 +9,20 @@ use bevy::{
     },
 };
 use bevy_panorbit_camera::PanOrbitCamera;
-// use camera::RotatingCamera;
+use camera::RotatingCamera;
+use chunk::Chunk;
 use custom_mesh::gen_visible_faces;
 use input::input_handler;
 use iyes_perf_ui::{entries::PerfUiBundle, PerfUiPlugin};
+use player::Player;
+use world::RENDER_DISTANCE;
 
 mod camera;
 mod chunk;
 mod custom_mesh;
 mod gui;
 mod input;
+mod player;
 mod world;
 
 fn main() {
@@ -50,7 +54,19 @@ fn main() {
         .add_plugins(gui::GuiPlugin)
         .add_systems(Startup, setup)
         .add_systems(Update, input_handler)
+        // oui
+        .add_systems(Update, move_player)
         .run();
+}
+
+pub fn move_player(mut cameras: Query<(&mut RotatingCamera, &mut Transform), With<Player>>) {
+    for (mut camera, mut transform) in cameras.iter_mut() {
+        let delta = 1.0f32;
+        camera.rotation += delta * 0.10f32;
+        let rotation = Quat::from_axis_angle(Vec3::Y, camera.rotation);
+        transform.translation = Vec3::new(100.0, 75.0, 100.0) + (rotation * Vec3::Z * 40f32);
+        transform.look_at(camera.center, Vec3::Y);
+    }
 }
 
 fn setup(
@@ -62,19 +78,56 @@ fn setup(
     // Import the custom texture.
     let custom_texture_handle: Handle<Image> = asset_server.load("array_texture.png");
 
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(Cuboid {
-            ..Default::default()
-        }),
-        material: materials.add(StandardMaterial {
-            base_color_texture: Some(custom_texture_handle.clone()),
-            // base_color: Color::WHITE,
-            base_color: Color::srgba(1.0, 1.0, 1.0, 1.0),
-            // alpha_mode: AlphaMode::Mask(0.5),
+    for i in 0..RENDER_DISTANCE + 2 {
+        for j in 0..RENDER_DISTANCE + 2 {
+            commands
+                .spawn(PbrBundle {
+                    mesh: meshes.add(Cuboid {
+                        ..Default::default()
+                    }),
+                    material: materials.add(StandardMaterial {
+                        base_color: Color::WHITE,
+                        base_color_texture: Some(custom_texture_handle.clone()),
+                        ..default()
+                    }),
+                    transform: Transform::from_xyz(0.0, 0.0, 0.0),
+                    ..default()
+                })
+                .insert(Chunk::default());
+        }
+    }
+    // commands
+    //     .spawn(PbrBundle {
+    //         mesh: meshes.add(Cuboid {
+    //             ..Default::default()
+    //         }),
+    //         material: materials.add(StandardMaterial {
+    //             base_color_texture: Some(custom_texture_handle.clone()),
+    //             // base_color: Color::WHITE,
+    //             base_color: Color::srgba(1.0, 1.0, 1.0, 1.0),
+    //             // alpha_mode: AlphaMode::Mask(0.5),
+    //             ..default()
+    //         }),
+    //         transform: Transform::from_xyz(0.0, 0.0, 0.0),
+    //         ..default()
+    //     })
+    //     .insert(Chunk::default());
+
+    commands
+        .spawn(PbrBundle {
+            mesh: meshes.add(Sphere {
+                radius: 10.0,
+                ..Default::default()
+            }),
+            material: materials.add(StandardMaterial {
+                base_color: Color::srgb(1.0, 0.0, 1.0),
+                ..default()
+            }),
+            transform: Transform::from_xyz(0.0, 100.0, 0.0),
             ..default()
-        }),
-        ..default()
-    });
+        })
+        .insert(Player::default())
+        .insert(RotatingCamera::default());
 
     // Camera in 3D space.
     commands

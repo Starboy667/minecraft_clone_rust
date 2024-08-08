@@ -1,30 +1,60 @@
-use bevy::prelude::Mesh;
-use noise::{Fbm, Perlin};
+use bevy::{
+    math::Vec2,
+    prelude::{Component, Mesh},
+};
+use noise::{Fbm, MultiFractal, NoiseFn, Perlin};
 
-use crate::custom_mesh::gen_visible_faces;
+use crate::{
+    custom_mesh::gen_visible_faces,
+    world::{CHUNK_HEIGHT, CHUNK_SIZE, HEIGHT_INTENSITY, HEIGHT_OFFSET, NOISE_OFFSET, NOISE_SCALE},
+};
 // https://youtu.be/esV1-2hB17E?si=8wT3LOnPkvs6ePVL
 // mettre à jour liste des chunks actifs (render distance player position)
 // delete les chunks plus actifs +  / créer les nouveaux actifs / recycler
 // fonction créer chunk (x, y, z) -> mesh
 
-fn height_map(width: i32, height: i32) -> Vec<Vec<f32>> {
+#[derive(Component)]
+pub struct Chunk {}
+
+impl Default for Chunk {
+    fn default() -> Self {
+        Chunk {}
+    }
+}
+
+fn height_map(offset: Vec2) -> Vec<Vec<f32>> {
     let mut map = vec![];
-    let scale = 0.1;
+    // let scale = 0.75;
     // let persistence = 0.5;
-    let octaves = 16;
+    // let octaves = 16;
     // let lacunarity: f64 = 2.0;
-    let frequency: f64 = 0.05261;
+    // let frequency: f64 = 0.05261;
 
-    let fbm: Fbm<Perlin> = Fbm::<Perlin>::new(13)
-        .set_octaves(octaves)
-        // .set_persistence(persistence)
-        // .set_lacunarity(lacunarity)
-        .set_frequency(frequency);
+    let fbm: Fbm<Perlin> = Fbm::<Perlin>::new(13);
+    // .set_octaves(octaves)
+    // .set_persistence(persistence)
+    // .set_lacunarity(lacunarity)
+    // .set_frequency(frequency);
 
-    for y in 0..height {
+    for x in 0..CHUNK_SIZE {
         let mut t = vec![];
-        for x in 0..width {
-            t.push(fbm.get([x as f64 * scale, y as f64 * scale]) as f32);
+        for y in 0..CHUNK_SIZE {
+            let PerlinCoordX =
+                NOISE_OFFSET.x + (x as f32 + (offset.x * 16.0)) / CHUNK_SIZE as f32 * NOISE_SCALE.x;
+            let PerlinCoordY =
+                NOISE_OFFSET.y + (y as f32 + (offset.y * 16.0)) / CHUNK_SIZE as f32 * NOISE_SCALE.y;
+            // let HeightGen = math
+            // Mathf.RoundToInt(
+            //     Mathf.PerlinNoise(PerlinCoordX, PerlinCoordY) * HeightIntensity + HeightOffset,
+            // );
+            t.push(
+                (fbm.get([PerlinCoordX as f64, PerlinCoordY as f64]) * HEIGHT_INTENSITY as f64
+                    + HEIGHT_OFFSET as f64) as f32,
+            )
+            // t.push(fbm.get([
+            //     (x as f64 + (offset.x as f64 * 16.0)) / 16.0 * scale,
+            //     (y as f64 + (offset.y as f64 * 16.0)) / 16.0 * scale,
+            // ]) as f32);
         }
         map.push(t);
     }
@@ -37,36 +67,46 @@ fn scale_noise_value(noise_val: f64, min_height: usize, max_height: usize) -> us
     (scaled_height as usize) + min_height
 }
 
-fn gen_chunk() -> Mesh {
-    let width = 16;
-    let height = 256;
-    let depth = 16;
+pub fn gen_chunk(offset: Vec2) -> Mesh {
     let mut cubes = vec![];
 
-    let hmap = height_map(width, depth);
-    let min_height = 0;
-    let max_height = height;
-
-    for _y in 0..=max_height {
+    let hmap = height_map(offset);
+    for _y in 0..CHUNK_HEIGHT {
         let mut layer = vec![];
-        for _z in 0..width {
-            let column = vec![0; depth as usize];
+        for _z in 0..CHUNK_SIZE {
+            let column = vec![0; CHUNK_SIZE as usize];
             layer.push(column);
         }
         cubes.push(layer);
     }
-
-    for z in 0..width {
-        for x in 0..depth {
-            let height_val = scale_noise_value(
-                hmap[x as usize][z as usize] as f64,
-                min_height,
-                max_height as usize,
-            );
+    for z in 0..CHUNK_SIZE {
+        for x in 0..CHUNK_SIZE {
+            // let height_val =
+            //     scale_noise_value(hmap[x as usize][z as usize] as f64, 0, CHUNK_HEIGHT);
+            let height_val = hmap[x as usize][z as usize] as usize;
+            // println!("height_val: {:?}", height_val);
             for y in 0..height_val {
                 cubes[y][z as usize][x as usize] = 1;
             }
         }
     }
-    gen_visible_faces(&cubes)
+    gen_visible_faces(&cubes, offset)
 }
+
+// fn update(
+//     mesh_query: Query<&Handle<Mesh>>,
+//     mut meshes: ResMut<Assets<Mesh>>,
+//     mut this: ResMut<World>,
+// player: Query<&Transform, With<Player>>,
+// ) {
+// if !this.update {
+//     return;
+// }
+// let mesh_handle = mesh_query.get_single().expect("Query not successful");
+// if let Some(mesh) = meshes.get_mut(mesh_handle) {
+//     *mesh = gen_visible_faces(&this.cubes);
+//     this.update = false;
+// } else {
+//     panic!("Mesh not found");
+// }
+// }
