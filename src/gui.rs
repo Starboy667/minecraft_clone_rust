@@ -10,12 +10,20 @@ use bevy_egui::{
 
 use crate::world::World;
 
-pub fn update_ui(mut this: ResMut<World>, mut contexts: EguiContexts) {
+pub fn update_ui(mut world: ResMut<World>, mut contexts: EguiContexts) {
+    let mut render_distance = world.render_distance;
     // let mut width = this.width;
     // let mut height = this.height;
     // let mut depth = this.depth;
     egui::Window::new("World").show(contexts.ctx_mut(), |ui| {
         ui.label("Settings");
+        // render distance
+        let old_render_distance = render_distance;
+        ui.add(egui::Slider::new(&mut render_distance, 1..=50).text("render_distance"));
+        if render_distance != old_render_distance {
+            // this.set_size(height, width, depth);
+            world.render_distance = render_distance;
+        }
         // HEIGHT
         // let old_height = height;
         // ui.add(egui::Slider::new(&mut height, 1..=300).text("height"));

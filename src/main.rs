@@ -10,19 +10,20 @@ use bevy::{
 };
 use bevy_panorbit_camera::PanOrbitCamera;
 use camera::RotatingCamera;
-use chunk::Chunk;
-use custom_mesh::gen_visible_faces;
 use input::input_handler;
 use iyes_perf_ui::{entries::PerfUiBundle, PerfUiPlugin};
 use player::Player;
-use world::RENDER_DISTANCE;
+use texture::TextureHandles;
 
 mod camera;
 mod chunk;
+mod constant;
 mod custom_mesh;
 mod gui;
 mod input;
 mod player;
+mod texture;
+mod utils;
 mod world;
 
 fn main() {
@@ -75,43 +76,8 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
-    // Import the custom texture.
-    let custom_texture_handle: Handle<Image> = asset_server.load("array_texture.png");
-
-    for i in 0..RENDER_DISTANCE + 2 {
-        for j in 0..RENDER_DISTANCE + 2 {
-            commands
-                .spawn(PbrBundle {
-                    mesh: meshes.add(Cuboid {
-                        ..Default::default()
-                    }),
-                    material: materials.add(StandardMaterial {
-                        base_color: Color::WHITE,
-                        base_color_texture: Some(custom_texture_handle.clone()),
-                        ..default()
-                    }),
-                    transform: Transform::from_xyz(0.0, 0.0, 0.0),
-                    ..default()
-                })
-                .insert(Chunk::default());
-        }
-    }
-    // commands
-    //     .spawn(PbrBundle {
-    //         mesh: meshes.add(Cuboid {
-    //             ..Default::default()
-    //         }),
-    //         material: materials.add(StandardMaterial {
-    //             base_color_texture: Some(custom_texture_handle.clone()),
-    //             // base_color: Color::WHITE,
-    //             base_color: Color::srgba(1.0, 1.0, 1.0, 1.0),
-    //             // alpha_mode: AlphaMode::Mask(0.5),
-    //             ..default()
-    //         }),
-    //         transform: Transform::from_xyz(0.0, 0.0, 0.0),
-    //         ..default()
-    //     })
-    //     .insert(Chunk::default());
+    let dirt: Handle<Image> = asset_server.load("array_texture.png");
+    commands.insert_resource(TextureHandles { dirt });
 
     commands
         .spawn(PbrBundle {

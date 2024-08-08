@@ -4,6 +4,8 @@ use bevy::{
     render::{mesh::Indices, render_asset::RenderAssetUsages, render_resource::PrimitiveTopology},
 };
 
+use crate::constant::CHUNK_SIZE;
+
 #[derive(Debug)]
 pub enum Direction {
     Up,
@@ -22,13 +24,13 @@ pub struct MeshData {
     indices: Vec<u32>,
 }
 
-pub fn gen_visible_faces(cubes: &Vec<Vec<Vec<usize>>>, offset: Vec2) -> Mesh {
+pub fn gen_visible_faces(cubes: &Vec<Vec<Vec<usize>>>) -> Mesh {
     let mut visible_cubes: Vec<MeshData> = Vec::new();
     let mut cube_count = 0;
 
     for y in 0..cubes.len() {
-        for z in 0..cubes[y].len() {
-            for x in 0..cubes[y][z].len() {
+        for z in 1..cubes[y].len() {
+            for x in 1..cubes[y][z].len() {
                 // for direction in [
                 //     DirectionB::Y,
                 //     DirectionB::NegY,
@@ -39,7 +41,7 @@ pub fn gen_visible_faces(cubes: &Vec<Vec<Vec<usize>>>, offset: Vec2) -> Mesh {
                 // ]
                 // .iter()
                 // {
-                if cubes[y][z][x] == 0 {
+                if cubes[y][z][x] == 0 || z > CHUNK_SIZE || x > CHUNK_SIZE || y == 0 {
                     continue;
                 }
                 for direction in check_visibility(y, z, x, cubes) {
