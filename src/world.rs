@@ -38,42 +38,42 @@ impl World {
         }
     }
 
-    pub fn set_size(&mut self, height: i32, width: i32, depth: i32) {
-        // let mut cubes = vec![];
-        // let mut chunks = vec![];
-        // let hmap = height_map(width, depth);
-        // let min_height = 0;
-        // let max_height = height;
+    // pub fn set_size(&mut self, height: i32, width: i32, depth: i32) {
+    // let mut cubes = vec![];
+    // let mut chunks = vec![];
+    // let hmap = height_map(width, depth);
+    // let min_height = 0;
+    // let max_height = height;
 
-        // for _y in 0..=max_height {
-        //     let mut layer = vec![];
-        //     for _z in 0..width {
-        //         let column = vec![0; depth as usize];
-        //         layer.push(column);
-        //     }
-        //     cubes.push(layer);
-        // }
+    // for _y in 0..=max_height {
+    //     let mut layer = vec![];
+    //     for _z in 0..width {
+    //         let column = vec![0; depth as usize];
+    //         layer.push(column);
+    //     }
+    //     cubes.push(layer);
+    // }
 
-        // for z in 0..width {
-        //     for x in 0..depth {
-        //         let height_val = scale_noise_value(
-        //             hmap[x as usize][z as usize] as f64,
-        //             min_height,
-        //             max_height as usize,
-        //         );
-        //         for y in 0..height_val {
-        //             cubes[y][z as usize][x as usize] = 1;
-        //         }
-        //     }
-        // }
-        // chunks.push(gen_visible_faces(&cubes));
-        // self.update = true;
-        // self.width = width;
-        // self.height = height;
-        // self.depth = depth;
-        // self.cubes = cubes;
-        // self.chunks = chunks;
-    }
+    // for z in 0..width {
+    //     for x in 0..depth {
+    //         let height_val = scale_noise_value(
+    //             hmap[x as usize][z as usize] as f64,
+    //             min_height,
+    //             max_height as usize,
+    //         );
+    //         for y in 0..height_val {
+    //             cubes[y][z as usize][x as usize] = 1;
+    //         }
+    //     }
+    // }
+    // chunks.push(gen_visible_faces(&cubes));
+    // self.update = true;
+    // self.width = width;
+    // self.height = height;
+    // self.depth = depth;
+    // self.cubes = cubes;
+    // self.chunks = chunks;
+    // }
 }
 
 fn gen_data(
