@@ -98,7 +98,7 @@ fn setup(
     // Camera in 3D space.
     commands
         .spawn(Camera3dBundle {
-            transform: Transform::from_xyz(100.8, 5.0, -50.8).looking_at(Vec3::ZERO, Vec3::Y),
+            transform: Transform::from_xyz(100.8, 100.0, -50.8).looking_at(Vec3::ZERO, Vec3::Y),
             ..default()
         })
         // .insert(RotatingCamera::default());

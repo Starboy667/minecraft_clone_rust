@@ -2,11 +2,11 @@ use bevy::{
     math::Vec2,
     prelude::{Component, Mesh},
 };
-use noise::{Fbm, NoiseFn, Perlin};
+use noise::{Fbm, MultiFractal, NoiseFn, Perlin};
 
 use crate::{
     constant::{
-        CHUNK_HEIGHT, CHUNK_SIZE, HEIGHT_INTENSITY, HEIGHT_OFFSET, NOISE_OFFSET, NOISE_SCALE,
+        CHUNK_HEIGHT, CHUNK_SIZE, HEIGHT_INTENSITY, HEIGHT_OFFSET, NOISE_OCTAVES, NOISE_OFFSET, NOISE_PERSISTENCE, NOISE_SCALE
     },
     custom_mesh::gen_visible_faces,
 };
@@ -35,15 +35,11 @@ impl Chunk {
 
 fn height_map(offset: Vec2) -> Vec<Vec<f32>> {
     let mut map = vec![];
-    // let scale = 0.75;
-    // let persistence = 0.5;
-    // let octaves = 16;
-    // let lacunarity: f64 = 2.0;
-    // let frequency: f64 = 0.05261;
 
-    let fbm: Fbm<Perlin> = Fbm::<Perlin>::new(13);
-    // .set_octaves(octaves)
-    // .set_persistence(persistence)
+
+    let fbm: Fbm<Perlin> = Fbm::<Perlin>::new(13)
+    .set_octaves(NOISE_OCTAVES)
+    .set_persistence(NOISE_PERSISTENCE);
     // .set_lacunarity(lacunarity)
     // .set_frequency(frequency);
 
@@ -54,10 +50,16 @@ fn height_map(offset: Vec2) -> Vec<Vec<f32>> {
                 NOISE_OFFSET.x + (x as f32 - 1.0 + (offset.x * 16.0)) / CHUNK_SIZE as f32 * NOISE_SCALE.x;
             let perlin_coord_y =
                 NOISE_OFFSET.y + (y as f32 - 1.0 + (offset.y * 16.0)) / CHUNK_SIZE as f32 * NOISE_SCALE.y;
-            t.push(
-                (fbm.get([perlin_coord_x as f64, perlin_coord_y as f64]) * HEIGHT_INTENSITY as f64
-                    + HEIGHT_OFFSET as f64) as f32,
-            )
+            let formula =  (fbm.get([perlin_coord_x as f64, perlin_coord_y as f64]) * HEIGHT_INTENSITY as f64
+            + HEIGHT_OFFSET as f64) as f32;
+            // let formula =  (fbm.get([(((x as f32 - 1.0 + (offset.x * 16.0)) / CHUNK_SIZE as f32) * scale) as f64,
+            // (((y as f32 - 1.0 + (offset.y * 16.0)) / CHUNK_SIZE as f32) * scale) as f64]) as f32);
+
+            // let formula =  fbm.get([((x as f32 - 1.0 + offset.x * 16.0) as f32 * scale) as f64,
+            // ((y as f32 - 1.0 + offset.y * 16.0) * scale) as f64]) as f32;
+            // let formula = fbm.get([perlin_coord_x as f64 * 160.0 * scale , perlin_coord_y as f64 * 160.0 * scale]) as f32;
+            // println!("{:?}", formula);
+            t.push(formula);
         }
         map.push(t);
     }
