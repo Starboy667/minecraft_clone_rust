@@ -56,7 +56,7 @@ fn main() {
         .add_systems(Startup, setup)
         .add_systems(Update, input_handler)
         // oui
-        .add_systems(Update, move_player)
+        // .add_systems(Update, move_player)
         .run();
 }
 
@@ -76,8 +76,11 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
-    let dirt: Handle<Image> = asset_server.load("array_texture.png");
-    commands.insert_resource(TextureHandles { dirt });
+    let texture_handle = asset_server.load("DefaultPack.png");
+
+    commands.insert_resource(TextureHandles {
+        dirt: texture_handle,
+    });
 
     commands
         .spawn(PbrBundle {

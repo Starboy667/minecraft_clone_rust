@@ -4,7 +4,7 @@ use bevy::{
     render::{mesh::Indices, render_asset::RenderAssetUsages, render_resource::PrimitiveTopology},
 };
 
-use crate::constant::CHUNK_SIZE;
+use crate::{constant::CHUNK_SIZE, utils::block_uv};
 
 #[derive(Debug)]
 pub enum Direction {
@@ -19,7 +19,7 @@ pub enum Direction {
 #[derive(Debug)]
 pub struct MeshData {
     pos: Vec<[f64; 3]>,
-    uv: Vec<[f64; 2]>,
+    uv: Vec<[f32; 2]>,
     normal: Vec<[f64; 3]>,
     indices: Vec<u32>,
 }
@@ -29,78 +29,19 @@ pub fn gen_visible_faces(cubes: &Vec<Vec<Vec<usize>>>) -> Mesh {
     let mut cube_count = 0;
 
     for y in 0..cubes.len() {
-        for z in 1..cubes[y].len() {
-            for x in 1..cubes[y][z].len() {
-                // for direction in [
-                //     DirectionB::Y,
-                //     DirectionB::NegY,
-                //     DirectionB::X,
-                //     DirectionB::NegX,
-                //     DirectionB::Z,
-                //     DirectionB::NegZ,
-                // ]
-                // .iter()
-                // {
-                if cubes[y][z][x] == 0 || z > CHUNK_SIZE || x > CHUNK_SIZE || y == 0 {
+        for z in 1..CHUNK_SIZE + 1 {
+            for x in 1..CHUNK_SIZE + 1 {
+                if cubes[y][z][x] == 0 {
                     continue;
                 }
-                for direction in check_visibility(y, z, x, cubes) {
-                    match direction {
-                        DirectionB::Y => {
-                            visible_cubes.push(create_cube_faces_mesh(
-                                Direction::Up,
-                                x,
-                                y,
-                                z,
-                                cube_count,
-                            ));
-                        }
-                        DirectionB::NegY => {
-                            visible_cubes.push(create_cube_faces_mesh(
-                                Direction::Down,
-                                x,
-                                y,
-                                z,
-                                cube_count,
-                            ));
-                        }
-                        DirectionB::X => {
-                            visible_cubes.push(create_cube_faces_mesh(
-                                Direction::Right,
-                                x,
-                                y,
-                                z,
-                                cube_count,
-                            ));
-                        }
-                        DirectionB::NegX => {
-                            visible_cubes.push(create_cube_faces_mesh(
-                                Direction::Left,
-                                x,
-                                y,
-                                z,
-                                cube_count,
-                            ));
-                        }
-                        DirectionB::Z => {
-                            visible_cubes.push(create_cube_faces_mesh(
-                                Direction::Backward,
-                                x,
-                                y,
-                                z,
-                                cube_count,
-                            ));
-                        }
-                        DirectionB::NegZ => {
-                            visible_cubes.push(create_cube_faces_mesh(
-                                Direction::Forward,
-                                x,
-                                y,
-                                z,
-                                cube_count,
-                            ));
-                        }
-                    }
+                for direction in check_visibility(x, y, z, cubes) {
+                    visible_cubes.push(create_cube_faces_mesh(
+                        direction,
+                        x - 1,
+                        y,
+                        z - 1,
+                        cube_count,
+                    ));
                     cube_count += 4;
                 }
             }
@@ -109,121 +50,100 @@ pub fn gen_visible_faces(cubes: &Vec<Vec<Vec<usize>>>) -> Mesh {
     add_meshes(visible_cubes)
 }
 
-#[derive(Debug)]
-enum DirectionB {
-    X,
-    Y,
-    Z,
-    NegX,
-    NegY,
-    NegZ,
-}
-
-// FIX CORRESPONDACE X Y Z
-fn check_visibility(x: usize, y: usize, z: usize, cubes: &Vec<Vec<Vec<usize>>>) -> Vec<DirectionB> {
-    let mut directions: Vec<DirectionB> = Vec::new();
-
-    // Y
-    match cubes.get(x) {
-        Some(inner_vec) => match inner_vec.get(y + 1) {
-            Some(inner_inner_vec) => match inner_inner_vec.get(z) {
+fn check_visibility(x: usize, y: usize, z: usize, cubes: &Vec<Vec<Vec<usize>>>) -> Vec<Direction> {
+    let mut directions: Vec<Direction> = Vec::new();
+    match cubes.get(y) {
+        Some(inner_vec) => match inner_vec.get(z + 1) {
+            Some(inner_inner_vec) => match inner_inner_vec.get(x) {
                 Some(val) => {
                     if *val == 0 {
-                        directions.push(DirectionB::Z);
+                        directions.push(Direction::Backward);
                     }
                 }
-                None => directions.push(DirectionB::Z),
+                None => directions.push(Direction::Backward),
             },
-            None => directions.push(DirectionB::Z),
+            None => directions.push(Direction::Backward),
         },
-        None => directions.push(DirectionB::Z),
+        None => directions.push(Direction::Backward),
     };
-    if y == 0 {
-        directions.push(DirectionB::NegZ);
-    } else {
-        match cubes.get(x) {
-            Some(inner_vec) => match inner_vec.get(y - 1) {
-                Some(inner_inner_vec) => match inner_inner_vec.get(z) {
-                    Some(val) => {
-                        if *val == 0 {
-                            directions.push(DirectionB::NegZ);
-                        }
-                    }
-                    None => directions.push(DirectionB::NegZ),
-                },
-                None => {}
-            },
-            None => {}
-        };
-    }
 
-    // X
-    match cubes.get(x + 1) {
-        Some(inner_vec) => match inner_vec.get(y) {
-            Some(inner_inner_vec) => match inner_inner_vec.get(z) {
+    match cubes.get(y) {
+        Some(inner_vec) => match inner_vec.get(z - 1) {
+            Some(inner_inner_vec) => match inner_inner_vec.get(x) {
                 Some(val) => {
                     if *val == 0 {
-                        directions.push(DirectionB::Y);
+                        directions.push(Direction::Forward);
                     }
                 }
-                None => directions.push(DirectionB::Y),
-            },
-            None => directions.push(DirectionB::Y),
-        },
-        None => directions.push(DirectionB::Y),
-    };
-    if x == 0 {
-        directions.push(DirectionB::NegY);
-    } else {
-        match cubes.get(x - 1) {
-            Some(inner_vec) => match inner_vec.get(y) {
-                Some(inner_inner_vec) => match inner_inner_vec.get(z) {
-                    Some(val) => {
-                        if *val == 0 {
-                            directions.push(DirectionB::Y);
-                        }
-                    }
-                    None => directions.push(DirectionB::Y),
-                },
-                None => {}
-            },
-            None => {}
-        };
-    }
-
-    // Z
-    match cubes.get(x) {
-        Some(inner_vec) => match inner_vec.get(y) {
-            Some(inner_inner_vec) => match inner_inner_vec.get(z + 1) {
-                Some(val) => {
-                    if *val == 0 {
-                        directions.push(DirectionB::X);
-                    }
-                }
-                None => directions.push(DirectionB::X),
+                None => directions.push(Direction::Forward),
             },
             None => {}
         },
         None => {}
     };
-    if z == 0 {
-        directions.push(DirectionB::NegX);
+
+    match cubes.get(y + 1) {
+        Some(inner_vec) => match inner_vec.get(z) {
+            Some(inner_inner_vec) => match inner_inner_vec.get(x) {
+                Some(val) => {
+                    if *val == 0 {
+                        directions.push(Direction::Up);
+                    }
+                }
+                None => directions.push(Direction::Up),
+            },
+            None => directions.push(Direction::Up),
+        },
+        None => directions.push(Direction::Up),
+    };
+    if y == 0 {
+        directions.push(Direction::Down);
     } else {
-        match cubes.get(x) {
-            Some(inner_vec) => match inner_vec.get(y) {
-                Some(inner_inner_vec) => match inner_inner_vec.get(z - 1) {
+        match cubes.get(y - 1) {
+            Some(inner_vec) => match inner_vec.get(z) {
+                Some(inner_inner_vec) => match inner_inner_vec.get(x) {
                     Some(val) => {
                         if *val == 0 {
-                            directions.push(DirectionB::NegX);
+                            directions.push(Direction::Down);
                         }
                     }
-                    None => directions.push(DirectionB::NegX),
+                    None => directions.push(Direction::Down),
                 },
                 None => {}
             },
             None => {}
         };
     }
+
+    match cubes.get(y) {
+        Some(inner_vec) => match inner_vec.get(z) {
+            Some(inner_inner_vec) => match inner_inner_vec.get(x + 1) {
+                Some(val) => {
+                    if *val == 0 {
+                        directions.push(Direction::Right);
+                    }
+                }
+                None => directions.push(Direction::Right),
+            },
+            None => {}
+        },
+        None => {}
+    };
+
+    match cubes.get(y) {
+        Some(inner_vec) => match inner_vec.get(z) {
+            Some(inner_inner_vec) => match inner_inner_vec.get(x - 1) {
+                Some(val) => {
+                    if *val == 0 {
+                        directions.push(Direction::Left);
+                    }
+                }
+                None => directions.push(Direction::Left),
+            },
+            None => {}
+        },
+        None => {}
+    };
     directions
 }
 
@@ -311,48 +231,52 @@ pub fn create_cube_faces_mesh(
     };
 
     let uv = match direction {
-        Direction::Up => vec![
-            // Assigning the UV coords for the top side.
-            [0.0, 0.2],
-            [0.0, 0.0],
-            [1.0, 0.0],
-            [1.0, 0.2],
-        ],
-        Direction::Down => vec![
-            // Assigning the UV coords for the bottom side.
-            [0.0, 0.45],
-            [0.0, 0.25],
-            [1.0, 0.25],
-            [1.0, 0.45],
-        ],
-        Direction::Right => vec![
-            // Assigning the UV coords for the right side.
-            [1.0, 0.45],
-            [0.0, 0.45],
-            [0.0, 0.2],
-            [1.0, 0.2],
-        ],
-        Direction::Left => vec![
-            // Assigning the UV coords for the left side.
-            [1.0, 0.45],
-            [0.0, 0.45],
-            [0.0, 0.2],
-            [1.0, 0.2],
-        ],
-        Direction::Backward => vec![
-            // Assigning the UV coords for the back side.
-            [0.0, 0.45],
-            [0.0, 0.2],
-            [1.0, 0.2],
-            [1.0, 0.45],
-        ],
-        Direction::Forward => vec![
-            // Assigning the UV coords for the forward side.
-            [0.0, 0.45],
-            [0.0, 0.2],
-            [1.0, 0.2],
-            [1.0, 0.45],
-        ],
+        Direction::Up => block_uv(0, 16),
+        //  vec![
+        // Assigning the UV coords for the top side.
+        // [0.0, 0.2],
+        // [0.0, 0.0],
+        // [1.0, 0.0],
+        // [1.0, 0.2],
+        // ],
+        Direction::Down => block_uv(2, 16),
+        // vec![
+        // Assigning the UV coords for the bottom side.
+        // [0.0, 0.45],
+        // [0.0, 0.25],
+        // [1.0, 0.25],
+        // [1.0, 0.45],
+        // ],
+
+        // Direction::Right => vec![
+        //     // Assigning the UV coords for the right side.
+        //     [1.0, 0.45],
+        //     [0.0, 0.45],
+        //     [0.0, 0.2],
+        //     [1.0, 0.2],
+        // ],
+        // Direction::Left => vec![
+        //     // Assigning the UV coords for the left side.
+        //     [1.0, 0.45],
+        //     [0.0, 0.45],
+        //     [0.0, 0.2],
+        //     [1.0, 0.2],
+        // ],
+        // Direction::Backward => vec![
+        //     // Assigning the UV coords for the back side.
+        //     [0.0, 0.45],
+        //     [0.0, 0.2],
+        //     [1.0, 0.2],
+        //     [1.0, 0.45],
+        // ],
+        // Direction::Forward => vec![
+        //     // Assigning the UV coords for the forward side.
+        //     [0.0, 0.45],
+        //     [0.0, 0.2],
+        //     [1.0, 0.2],
+        //     [1.0, 0.45],
+        // ],
+        _ => block_uv(1, 16),
     };
 
     let normal = match direction {

@@ -1,20 +1,28 @@
 use bevy::{
     app::{Plugin, Update},
     // color::Color,
-    prelude::ResMut,
+    prelude::{Commands, Entity, Query, ResMut},
 };
 use bevy_egui::{
     egui::{self},
     EguiContexts, EguiPlugin,
 };
 
-use crate::world::World;
+use crate::{chunk::ChunkId, world::World};
 
-pub fn update_ui(mut world: ResMut<World>, mut contexts: EguiContexts) {
+pub fn update_ui(
+    mut world: ResMut<World>,
+    mut contexts: EguiContexts,
+    mut commands: Commands,
+    mut chunks: Query<(Entity, &ChunkId)>,
+) {
     let mut render_distance = world.render_distance;
-    // let mut width = this.width;
-    // let mut height = this.height;
-    // let mut depth = this.depth;
+    let mut HEIGHT_OFFSET = world.terrain_settings.NOISE_OFFSET;
+    let mut HEIGHT_INTENSITY = world.terrain_settings.HEIGHT_INTENSITY;
+    let mut NOISE_SCALE = world.terrain_settings.NOISE_SCALE;
+    let mut NOISE_OFFSET = world.terrain_settings.NOISE_OFFSET;
+    let mut NOISE_OCTAVES = world.terrain_settings.NOISE_OCTAVES;
+    let mut NOISE_PERSISTENCE = world.terrain_settings.NOISE_PERSISTENCE;
     egui::Window::new("World").show(contexts.ctx_mut(), |ui| {
         ui.label("Settings");
         // render distance
@@ -24,72 +32,20 @@ pub fn update_ui(mut world: ResMut<World>, mut contexts: EguiContexts) {
             // this.set_size(height, width, depth);
             world.render_distance = render_distance;
         }
-        // HEIGHT
-        // let old_height = height;
-        // ui.add(egui::Slider::new(&mut height, 1..=300).text("height"));
-        // if height != old_height {
-        //     this.set_size(height, width, depth);
-        // }
-        // // WIDTH
-        // let old_width = width;
-        // ui.add(egui::Slider::new(&mut width, 1..=300).text("width"));
-        // if width != old_width {
-        //     this.set_size(height, width, depth);
-        // }
-        // // DEPTH
-        // let old_depth = depth;
-        // ui.add(egui::Slider::new(&mut depth, 1..=300).text("depth"));
-        // if depth != old_depth {
-        //     this.set_size(height, width, depth);
-        // }
-        // // SPEED
-        // let mut speed = this.update_timer.duration().as_secs_f32();
-        // ui.add(egui::Slider::new(&mut speed, 0.0..=0.5).text("speed"));
-        // if speed != this.update_timer.duration().as_secs_f32() {
-        //     this.update_timer
-        //         .set_duration(std::time::Duration::from_secs_f32(speed));
-        // }
-        // // RESET
-        // if ui.button("Reset").clicked() {
-        //     this.reset();
-        // }
-        // ui.label("Rule");
-        // ui.horizontal_wrapped(|ui| {
-        //     for i in 0..this.rule_preset.len() {
-        //         if ui.button(&this.rule_preset[i].name).clicked() {
-        //             this.load_rule_preset(i);
-        //         }
-        //     }
-        // });
 
-        // COLOR
-        // ui.label("Color mode");
-        // ui.checkbox(&mut this.glow, "Glow");
-        // ui.horizontal(|ui| {
-        //     ui.radio_value(&mut this.color_handler, ColorHandler::Rgb, "RGB");
-        //     ui.radio_value(
-        //         &mut this.color_handler,
-        //         ColorHandler::ColorPalette,
-        //         "ColorPalette",
-        //     );
-        //     ui.radio_value(
-        //         &mut this.color_handler,
-        //         ColorHandler::StateShading,
-        //         "StateShading",
-        //     );
-        //     ui.radio_value(
-        //         &mut this.color_handler,
-        //         ColorHandler::NeighborhoodDensity,
-        //         "NeighborhoodDensity",
-        //     );
-        // });
-        // if this.color_handler == ColorHandler::ColorPalette
-        //     || this.color_handler == ColorHandler::StateShading
-        // {
-        //     ui.label("Color palette");
-        //     color_picker(ui, &mut this.color_palette[0]);
-        //     color_picker(ui, &mut this.color_palette[1]);
-        // }
+        let old_NOISE_OCTAVES = NOISE_OCTAVES;
+        ui.add(egui::Slider::new(&mut NOISE_OCTAVES, 0..=20).text("NOISE_OCTAVES"));
+        if NOISE_OCTAVES != old_NOISE_OCTAVES {
+            world.terrain_settings.NOISE_OCTAVES = NOISE_OCTAVES;
+            world.reset(&mut commands, &mut chunks);
+        }
+
+        let old_HEIGHT_INTENSITY = HEIGHT_INTENSITY;
+        ui.add(egui::Slider::new(&mut HEIGHT_INTENSITY, 0.0..=256.0).text("HEIGHT_INTENSITY"));
+        if HEIGHT_INTENSITY != old_HEIGHT_INTENSITY {
+            world.terrain_settings.HEIGHT_INTENSITY = HEIGHT_INTENSITY;
+            world.reset(&mut commands, &mut chunks);
+        }
     });
 }
 
