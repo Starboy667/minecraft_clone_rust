@@ -17,12 +17,12 @@ pub fn update_ui(
     mut chunks: Query<(Entity, &ChunkId)>,
 ) {
     let mut render_distance = world.render_distance;
-    let mut HEIGHT_OFFSET = world.terrain_settings.NOISE_OFFSET;
-    let mut HEIGHT_INTENSITY = world.terrain_settings.HEIGHT_INTENSITY;
-    let mut NOISE_SCALE = world.terrain_settings.NOISE_SCALE;
-    let mut NOISE_OFFSET = world.terrain_settings.NOISE_OFFSET;
     let mut NOISE_OCTAVES = world.terrain_settings.NOISE_OCTAVES;
     let mut NOISE_PERSISTENCE = world.terrain_settings.NOISE_PERSISTENCE;
+    let mut a = world.terrain_settings.a;
+    let mut b = world.terrain_settings.b;
+    let mut c = world.terrain_settings.c;
+    let mut d = world.terrain_settings.d;
     egui::Window::new("World").show(contexts.ctx_mut(), |ui| {
         ui.label("Settings");
         // render distance
@@ -40,10 +40,39 @@ pub fn update_ui(
             world.reset(&mut commands, &mut chunks);
         }
 
-        let old_HEIGHT_INTENSITY = HEIGHT_INTENSITY;
-        ui.add(egui::Slider::new(&mut HEIGHT_INTENSITY, 0.0..=256.0).text("HEIGHT_INTENSITY"));
-        if HEIGHT_INTENSITY != old_HEIGHT_INTENSITY {
-            world.terrain_settings.HEIGHT_INTENSITY = HEIGHT_INTENSITY;
+        let old_NOISE_PERSISTENCE = NOISE_PERSISTENCE;
+        ui.add(egui::Slider::new(&mut NOISE_PERSISTENCE, 0.0..=5.0).text("NOISE_PERSISTENCE"));
+        if NOISE_PERSISTENCE != old_NOISE_PERSISTENCE {
+            world.terrain_settings.NOISE_PERSISTENCE = NOISE_PERSISTENCE;
+            world.reset(&mut commands, &mut chunks);
+        }
+
+        let old_a = a;
+        ui.add(egui::Slider::new(&mut a.0, -1.0..=2.0).text("a.0"));
+        ui.add(egui::Slider::new(&mut a.1, 0.0..=200.0).text("a.1"));
+        if a != old_a {
+            world.terrain_settings.a = a;
+            world.reset(&mut commands, &mut chunks);
+        }
+        let old_b = b;
+        ui.add(egui::Slider::new(&mut b.0, -1.0..=2.0).text("b.0"));
+        ui.add(egui::Slider::new(&mut b.1, 0.0..=200.0).text("b.1"));
+        if b != old_b {
+            world.terrain_settings.b = b;
+            world.reset(&mut commands, &mut chunks);
+        }
+        let old_c = c;
+        ui.add(egui::Slider::new(&mut c.0, -1.0..=2.0).text("c.0"));
+        ui.add(egui::Slider::new(&mut c.1, 0.0..=200.0).text("c.1"));
+        if c != old_c {
+            world.terrain_settings.c = c;
+            world.reset(&mut commands, &mut chunks);
+        }
+        let old_d = d;
+        ui.add(egui::Slider::new(&mut d.0, -1.0..=2.0).text("d.0"));
+        ui.add(egui::Slider::new(&mut d.1, 0.0..=200.0).text("d.1"));
+        if d != old_d {
+            world.terrain_settings.d = d;
             world.reset(&mut commands, &mut chunks);
         }
     });

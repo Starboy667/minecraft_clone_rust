@@ -13,4 +13,5 @@ pub const NOISE_OCTAVES: usize = 4;
 pub const NOISE_PERSISTENCE: f64 = 0.5;
 
 // PLAYER SETTINGS
-pub const RENDER_DISTANCE: usize = 5;
+pub const RENDER_DISTANCE: usize = 10;
+pub const WATER_LEVEL: f32 = 62.0;

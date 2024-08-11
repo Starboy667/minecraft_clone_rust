@@ -91,7 +91,9 @@ fn check_visibility(x: usize, y: usize, z: usize, cubes: &Vec<Vec<Vec<Blocks>>>)
         Some(inner_vec) => match inner_vec.get(z) {
             Some(inner_inner_vec) => match inner_inner_vec.get(x) {
                 Some(val) => {
-                    if *val == Blocks::Air {
+                    if *val == Blocks::Air
+                        || (*val == Blocks::Water && cubes[y][z][x] != Blocks::Water)
+                    {
                         directions.push(Direction::Up);
                     }
                 }
@@ -108,7 +110,9 @@ fn check_visibility(x: usize, y: usize, z: usize, cubes: &Vec<Vec<Vec<Blocks>>>)
             Some(inner_vec) => match inner_vec.get(z) {
                 Some(inner_inner_vec) => match inner_inner_vec.get(x) {
                     Some(val) => {
-                        if *val == Blocks::Air {
+                        if *val == Blocks::Air
+                            || (*val == Blocks::Water && cubes[y][z][x] != Blocks::Water)
+                        {
                             directions.push(Direction::Down);
                         }
                     }

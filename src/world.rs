@@ -86,7 +86,7 @@ fn gen_data(
                         material: materials.add(StandardMaterial {
                             base_color: Color::WHITE,
                             base_color_texture: Some(texture.dirt.clone()),
-                            alpha_mode: AlphaMode::Mask(0.1),
+                            alpha_mode: AlphaMode::Premultiplied,
                             ..default()
                         }),
                         transform: Transform::from_xyz(

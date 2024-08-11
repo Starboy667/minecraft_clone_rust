@@ -57,7 +57,7 @@ fn main() {
         .add_systems(Startup, setup)
         .add_systems(Update, input_handler)
         // oui
-        .add_systems(Update, move_player)
+        // .add_systems(Update, move_player)
         .run();
 }
 
