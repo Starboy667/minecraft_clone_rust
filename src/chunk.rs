@@ -5,6 +5,7 @@ use bevy::{
 use noise::{Fbm, MultiFractal, NoiseFn, Perlin};
 
 use crate::{
+    block::Blocks,
     constant::{
         CHUNK_HEIGHT, CHUNK_SIZE, HEIGHT_INTENSITY, HEIGHT_OFFSET, NOISE_OCTAVES, NOISE_OFFSET,
         NOISE_PERSISTENCE, NOISE_SCALE,
@@ -62,6 +63,7 @@ impl TerrainSettings {
             .set_persistence(self.NOISE_PERSISTENCE);
         // .set_lacunarity(lacunarity)
         // .set_frequency(frequency);
+        let JIGGLE: f64 = std::f64::consts::PI - 3.;
 
         for x in 0..CHUNK_SIZE + 2 {
             let mut t = vec![];
@@ -70,9 +72,15 @@ impl TerrainSettings {
                     + (x as f32 - 1.0 + (offset.x * 16.0)) / CHUNK_SIZE as f32 * self.NOISE_SCALE.x;
                 let perlin_coord_y = self.NOISE_OFFSET.y
                     + (y as f32 - 1.0 + (offset.y * 16.0)) / CHUNK_SIZE as f32 * self.NOISE_SCALE.y;
-                let formula = (fbm.get([perlin_coord_x as f64, perlin_coord_y as f64])
-                    * self.HEIGHT_INTENSITY as f64
-                    + self.HEIGHT_OFFSET as f64) as f32;
+                // let formula = (fbm.get([perlin_coord_x as f64, perlin_coord_y as f64])
+                //     * self.HEIGHT_INTENSITY as f64
+                //     + self.HEIGHT_OFFSET as f64) as f32;
+                let height = fbm.get([
+                    ((x as f32 - 1.0 + (offset.x * 16.0)) / CHUNK_SIZE as f32) as f64 * JIGGLE,
+                    ((y as f32 - 1.0 + (offset.y * 16.0)) / CHUNK_SIZE as f32) as f64 * JIGGLE,
+                ]) / 2.
+                    + 0.5;
+                let formula = (height * 100.0) as f32;
                 // let formula =  (fbm.get([(((x as f32 - 1.0 + (offset.x * 16.0)) / CHUNK_SIZE as f32) * scale) as f64,
                 // (((y as f32 - 1.0 + (offset.y * 16.0)) / CHUNK_SIZE as f32) * scale) as f64]) as f32);
 
@@ -88,12 +96,12 @@ impl TerrainSettings {
     }
 
     pub fn gen_chunk(&self, offset: Vec2) -> Mesh {
-        let mut cubes = vec![];
+        let mut cubes: Vec<Vec<Vec<Blocks>>> = vec![];
         let hmap = self.height_map(offset);
         for _y in 0..CHUNK_HEIGHT {
             let mut layer = vec![];
             for _z in 0..CHUNK_SIZE + 2 {
-                let column = vec![0; CHUNK_SIZE + 2 as usize];
+                let column = vec![Blocks::Air; CHUNK_SIZE + 2];
                 layer.push(column);
             }
             cubes.push(layer);
@@ -101,8 +109,18 @@ impl TerrainSettings {
         for z in 0..CHUNK_SIZE + 2 {
             for x in 0..CHUNK_SIZE + 2 {
                 let height_val = hmap[x as usize][z as usize] as usize;
+                // println!("{:?}", height_val);
                 for y in 0..height_val {
-                    cubes[y][z as usize][x as usize] = 1;
+                    // if y == height_val - 1 && y > 60 {
+                    //     cubes[y][z as usize][x as usize] = Blocks::Grass;
+                    // }
+                    if y > 60 {
+                        cubes[y][z as usize][x as usize] = Blocks::Stone;
+                    } else if height_val - 1 == y {
+                        cubes[y][z as usize][x as usize] = Blocks::Grass;
+                    } else {
+                        cubes[y][z as usize][x as usize] = Blocks::Dirt;
+                    }
                 }
             }
         }

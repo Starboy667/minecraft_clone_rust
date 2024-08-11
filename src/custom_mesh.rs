@@ -4,7 +4,11 @@ use bevy::{
     render::{mesh::Indices, render_asset::RenderAssetUsages, render_resource::PrimitiveTopology},
 };
 
-use crate::{constant::CHUNK_SIZE, utils::block_uv};
+use crate::{
+    block::Blocks,
+    constant::CHUNK_SIZE,
+    utils::{block_uv, get_block_index},
+};
 
 #[derive(Debug)]
 pub enum Direction {
@@ -24,14 +28,14 @@ pub struct MeshData {
     indices: Vec<u32>,
 }
 
-pub fn gen_visible_faces(cubes: &Vec<Vec<Vec<usize>>>) -> Mesh {
+pub fn gen_visible_faces(cubes: &Vec<Vec<Vec<Blocks>>>) -> Mesh {
     let mut visible_cubes: Vec<MeshData> = Vec::new();
     let mut cube_count = 0;
 
     for y in 0..cubes.len() {
         for z in 1..CHUNK_SIZE + 1 {
             for x in 1..CHUNK_SIZE + 1 {
-                if cubes[y][z][x] == 0 {
+                if cubes[y][z][x] == Blocks::Air || y == 0 {
                     continue;
                 }
                 for direction in check_visibility(x, y, z, cubes) {
@@ -41,6 +45,7 @@ pub fn gen_visible_faces(cubes: &Vec<Vec<Vec<usize>>>) -> Mesh {
                         y,
                         z - 1,
                         cube_count,
+                        &cubes[y][z][x],
                     ));
                     cube_count += 4;
                 }
@@ -50,13 +55,13 @@ pub fn gen_visible_faces(cubes: &Vec<Vec<Vec<usize>>>) -> Mesh {
     add_meshes(visible_cubes)
 }
 
-fn check_visibility(x: usize, y: usize, z: usize, cubes: &Vec<Vec<Vec<usize>>>) -> Vec<Direction> {
+fn check_visibility(x: usize, y: usize, z: usize, cubes: &Vec<Vec<Vec<Blocks>>>) -> Vec<Direction> {
     let mut directions: Vec<Direction> = Vec::new();
     match cubes.get(y) {
         Some(inner_vec) => match inner_vec.get(z + 1) {
             Some(inner_inner_vec) => match inner_inner_vec.get(x) {
                 Some(val) => {
-                    if *val == 0 {
+                    if *val == Blocks::Air {
                         directions.push(Direction::Backward);
                     }
                 }
@@ -71,7 +76,7 @@ fn check_visibility(x: usize, y: usize, z: usize, cubes: &Vec<Vec<Vec<usize>>>) 
         Some(inner_vec) => match inner_vec.get(z - 1) {
             Some(inner_inner_vec) => match inner_inner_vec.get(x) {
                 Some(val) => {
-                    if *val == 0 {
+                    if *val == Blocks::Air {
                         directions.push(Direction::Forward);
                     }
                 }
@@ -86,7 +91,7 @@ fn check_visibility(x: usize, y: usize, z: usize, cubes: &Vec<Vec<Vec<usize>>>) 
         Some(inner_vec) => match inner_vec.get(z) {
             Some(inner_inner_vec) => match inner_inner_vec.get(x) {
                 Some(val) => {
-                    if *val == 0 {
+                    if *val == Blocks::Air {
                         directions.push(Direction::Up);
                     }
                 }
@@ -103,7 +108,7 @@ fn check_visibility(x: usize, y: usize, z: usize, cubes: &Vec<Vec<Vec<usize>>>) 
             Some(inner_vec) => match inner_vec.get(z) {
                 Some(inner_inner_vec) => match inner_inner_vec.get(x) {
                     Some(val) => {
-                        if *val == 0 {
+                        if *val == Blocks::Air {
                             directions.push(Direction::Down);
                         }
                     }
@@ -119,7 +124,7 @@ fn check_visibility(x: usize, y: usize, z: usize, cubes: &Vec<Vec<Vec<usize>>>) 
         Some(inner_vec) => match inner_vec.get(z) {
             Some(inner_inner_vec) => match inner_inner_vec.get(x + 1) {
                 Some(val) => {
-                    if *val == 0 {
+                    if *val == Blocks::Air {
                         directions.push(Direction::Right);
                     }
                 }
@@ -134,7 +139,7 @@ fn check_visibility(x: usize, y: usize, z: usize, cubes: &Vec<Vec<Vec<usize>>>) 
         Some(inner_vec) => match inner_vec.get(z) {
             Some(inner_inner_vec) => match inner_inner_vec.get(x - 1) {
                 Some(val) => {
-                    if *val == 0 {
+                    if *val == Blocks::Air {
                         directions.push(Direction::Left);
                     }
                 }
@@ -184,6 +189,7 @@ pub fn create_cube_faces_mesh(
     y: usize,
     z: usize,
     offset: u32,
+    val: &Blocks,
 ) -> MeshData {
     let mut pos = match direction {
         Direction::Up => vec![
@@ -230,55 +236,18 @@ pub fn create_cube_faces_mesh(
         ],
     };
 
+    // let uv = match direction {
+    //     Direction::Up => block_uv(0, 16),
+    //     Direction::Down => block_uv(2, 16),
+    //     _ => block_uv(1, 16),
+    // };
     let uv = match direction {
-        Direction::Up => block_uv(0, 16),
-        //  vec![
-        // Assigning the UV coords for the top side.
-        // [0.0, 0.2],
-        // [0.0, 0.0],
-        // [1.0, 0.0],
-        // [1.0, 0.2],
-        // ],
-        Direction::Down => block_uv(2, 16),
-        // vec![
-        // Assigning the UV coords for the bottom side.
-        // [0.0, 0.45],
-        // [0.0, 0.25],
-        // [1.0, 0.25],
-        // [1.0, 0.45],
-        // ],
-
-        // Direction::Right => vec![
-        //     // Assigning the UV coords for the right side.
-        //     [1.0, 0.45],
-        //     [0.0, 0.45],
-        //     [0.0, 0.2],
-        //     [1.0, 0.2],
-        // ],
-        // Direction::Left => vec![
-        //     // Assigning the UV coords for the left side.
-        //     [1.0, 0.45],
-        //     [0.0, 0.45],
-        //     [0.0, 0.2],
-        //     [1.0, 0.2],
-        // ],
-        // Direction::Backward => vec![
-        //     // Assigning the UV coords for the back side.
-        //     [0.0, 0.45],
-        //     [0.0, 0.2],
-        //     [1.0, 0.2],
-        //     [1.0, 0.45],
-        // ],
-        // Direction::Forward => vec![
-        //     // Assigning the UV coords for the forward side.
-        //     [0.0, 0.45],
-        //     [0.0, 0.2],
-        //     [1.0, 0.2],
-        //     [1.0, 0.45],
-        // ],
-        _ => block_uv(1, 16),
+        Direction::Forward => block_uv(get_block_index(&val, &direction), 16, Some(3)),
+        Direction::Backward => block_uv(get_block_index(&val, &direction), 16, Some(3)),
+        // Direction::Right => block_uv(get_block_index(&val, &direction), 16, Some(3)),
+        _ => block_uv(get_block_index(&val, &direction), 16, None),
     };
-
+    // block_uv(get_block_index(&val, &direction), 16);
     let normal = match direction {
         Direction::Up => vec![
             // Normals for the top side (towards +y)
